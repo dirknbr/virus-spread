@@ -22,12 +22,13 @@ class Human:
     self.alive = True
     self.isolated = False
     self.n_friends = np.random.randint(1, 5)
+    # friends is unilateral for simplification
     self.friends = np.random.choice(tot, size=self.n_friends, replace=False)
 
   def get_infected(self, prob=.4):
     # check if will be infected by friends
     if not self.infected and not self.isolated and not self.immune:
-      infected_friends = sum([1 for i in self.friends if humans[i].infected])
+      infected_friends = sum([1 for i in self.friends if humans[i].infected and not humans[i].isolated])
       notinfected = 1 - prob ** infected_friends
       if notinfected > np.random.random():
         self.infected = True
@@ -58,7 +59,7 @@ T = 30 # periods
 
 # initialise population
 
-humans = [Human(i) for i in range(N)]
+humans = [Human(i, tot=N) for i in range(N)]
 
 # infect a few people
 
@@ -72,6 +73,7 @@ for r in rand:
 data_cases = []
 data_dead = []
 
+print('period cur.infected tot.infected dead immune isolated')
 for period in range(T):
   for i in range(N):
     humans[i].add_day()
@@ -79,15 +81,16 @@ for period in range(T):
     humans[i].die_if_infected()
     humans[i].recover_if_infected()
     # some people isolate
-    if np.random.random() < .01:
+    if np.random.random() < .01 and humans[i].alive:
       humans[i].isolate()
 
-  n_cases = sum([1 for i in range(N) if humans[i].infected])
+  n_cur_infected = sum([1 for i in range(N) if humans[i].infected])
   n_dead = sum([1 for i in range(N) if humans[i].alive == False])
   n_immune = sum([1 for i in range(N) if humans[i].immune])
-  n_cases += n_immune
+  n_isolated = sum([1 for i in range(N) if humans[i].isolated])
+  n_cases = n_immune + n_cur_infected
 
-  print(period, n_cases, n_dead, n_immune)
+  print(period, n_cur_infected, n_cases, n_dead, n_immune, n_isolated)
   data_cases.append(n_cases)
   data_dead.append(n_dead)
 
@@ -98,9 +101,4 @@ p3, = plt.plot(data_dead, label='Dead')
 plt.legend(handles=[p1, p2, p3])
 # plt.show()
 plt.savefig('change.png')
-
-
-
-
-
 
